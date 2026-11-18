@@ -8,7 +8,7 @@ real hardware measurements.
 
 | Target | Status |
 |---|---|
-| Mock Redfish server (simulated) | Executed — see `docs/test_cases.md` (2026-11-18: 32/32 PASS) |
+| Mock Redfish server (simulated) | Executed — see `docs/test_cases.md` (2026-11-18, Phase 2: 61/61 PASS) |
 | OpenBMC in QEMU | NOT RUN |
 | Real BMC / GPU server | NOT RUN |
 

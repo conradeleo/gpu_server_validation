@@ -5,9 +5,11 @@ Verify that the framework retrieves BMC data correctly over Redfish, interprets 
 predictably on BMC errors, and (later) aggregates BMC and host state into a correct system status.
 
 ## Scope
-* **In scope (Milestone 1):** Redfish service root, resource discovery, power state retrieval and
-  interpretation, client error handling (auth, HTTP errors, unreachable BMC), secret hygiene.
-* **Planned:** sensors/thresholds, event logs, host collectors, aggregation, events, pool simulation.
+* **In scope (Milestone 1 + Phase 2):** Redfish service root, resource discovery, power state retrieval and
+  interpretation, client error handling (auth, HTTP errors, unreachable BMC), secret hygiene,
+  temperature/fan/voltage threshold classification, event-log parsing and severity summary,
+  tolerance of incomplete BMC data.
+* **Planned:** host collectors, aggregation, events, pool simulation.
 * **Out of scope:** write/destructive BMC actions (power control, firmware update), real-hardware
   performance claims.
 

@@ -20,6 +20,7 @@ import requests
 import uvicorn
 
 from bmc.redfish_client import RedfishClient, RedfishConfig
+from bmc.sensor_collector import Thresholds, load_thresholds
 from common.config import load_test_config
 from mocks.mock_redfish_server import create_app
 
@@ -120,6 +121,12 @@ def redfish_config(mock_server: MockServerHandle, test_config: dict[str, Any]) -
 @pytest.fixture
 def redfish_client(redfish_config: RedfishConfig) -> RedfishClient:
     return RedfishClient(redfish_config)
+
+
+@pytest.fixture(scope="session")
+def thresholds() -> Thresholds:
+    """Framework thresholds from config/thresholds.yaml."""
+    return load_thresholds()
 
 
 @pytest.fixture

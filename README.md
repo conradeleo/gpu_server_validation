@@ -4,8 +4,8 @@ A Python/pytest framework that validates GPU servers by combining **BMC data ove
 **Linux host data**, and (in a later phase) turns detected failures into standardized
 infrastructure events for a GPU-pool resource-allocation simulator.
 
-> **Status: Milestone 1 (Phase 0 + Phase 1) complete.** Mock Redfish server, Redfish client,
-> power-state collector and TC01–TC03 are implemented and passing. Everything else is planned
+> **Status: Phase 2 complete.** Mock Redfish server, Redfish client, power/sensor/event-log
+> collectors and TC01–TC06 are implemented and passing. Everything else is planned
 > and marked as such. All BMC data is **simulated**; no real hardware has been tested yet.
 
 ## Motivation
@@ -65,6 +65,8 @@ MOCK_REDFISH_USERNAME=demo MOCK_REDFISH_PASSWORD=demo-pass \
 | `sensor_warning` | B: CPU0 88 °C > 85 °C warning threshold, health Warning, host healthy |
 | `host_gpu_failure` | C: BMC fully healthy, host GPU driver error |
 | `powered_off` | D: power Off, host unreachable |
+| `bmc_critical_host_failure` | E: GPU0 93 °C, Fan2 800 RPM, critical SEL event, host GPU error |
+| `sparse_sensors` | Robustness: missing readings, absent fan, % fan, malformed event fields |
 | `vendor_ids` | Normal data at `Systems/Self`, `Chassis/1` (tests link discovery) |
 
 Runtime control (not Redfish, test orchestration only):
@@ -111,7 +113,7 @@ no BMC, GPU or network access is needed. Outputs:
 * `reports/report.html` – pytest-html report with a Test ID column and evidence block
 * `reports/junit.xml` – for CI
 
-Latest run (2026-11-18, Python 3.13.18, Ubuntu 24.04.5): **32 passed, 0 failed** —
+Latest run (2026-11-18, Python 3.13.18, Ubuntu 24.04.5): **61 passed, 0 failed** —
 see [docs/test_cases.md](docs/test_cases.md).
 
 ## Implementation status
@@ -122,7 +124,7 @@ see [docs/test_cases.md](docs/test_cases.md).
 | Redfish client (discovery, auth, timeout, TLS, error types) | ✅ done |
 | Power-state collector / interpretation | ✅ done |
 | TC01–TC03 + 6 supplementary client tests, JSON/HTML evidence | ✅ done |
-| Sensor/event-log collectors (TC04–TC06) | ⏳ Phase 2 |
+| Sensor classification (temp/fan/voltage) + event-log parsing, TC04–TC06 | ✅ done (Phase 2) |
 | Host collectors: system, logs, GPU (nvidia-smi → ROCm), SSH (TC07–TC09) | ⏳ Phase 3 |
 | Validation engine + aggregation policy (TC10–TC12) | ⏳ Phase 4 |
 | Event schema + adapter | ⏳ Phase 6 |
@@ -135,11 +137,13 @@ Files for planned phases exist as documented stubs only.
 * Only tested against the mock; behavior against real OpenBMC / vendor BMCs is **unverified**.
 * Uses legacy `Power`/`Thermal` resources; `PowerSubsystem`/`ThermalSubsystem` not yet handled.
 * Discovery uses the first member of `Systems`/`Chassis` (single-node servers).
+* `PowerSubsystem`/`ThermalSubsystem` and per-sensor `Sensors` collection not yet read.
+* Event-log entries listed only as links are fetched one by one (not yet covered by a mock scenario).
 * Basic auth only (no Redfish session tokens yet). No response caching (discovery re-reads the root).
 * Mock control endpoints are unauthenticated and bound to 127.0.0.1 by default.
 
 ## Future development
 
-Phase 2 sensor and event-log classification → Phase 3 host collectors → Phase 4 aggregation engine →
+Phase 3 host collectors → Phase 4 aggregation engine →
 Phase 6 events → Phase 7 pool-availability simulator (A_p(t) ∈ {0,1}; capacity stays exogenous) →
 later: OpenBMC in QEMU as a real Redfish target.

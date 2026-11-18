@@ -12,8 +12,8 @@ from typing import Any
 ROOT = "/redfish/v1"
 
 
-def _status(health: str, state: str = "Enabled") -> dict[str, str]:
-    return {"State": state, "Health": health}
+def _status(health: str | None, state: str | None = "Enabled") -> dict[str, str | None]:
+    return {"State": state or "Enabled", "Health": health}
 
 
 def redfish_error(code: str, message: str) -> dict[str, Any]:
@@ -119,10 +119,10 @@ def power(sc: dict[str, Any]) -> dict[str, Any]:
                 "@odata.id": f"{base}#/Voltages/{i}",
                 "MemberId": str(i),
                 "Name": v["name"],
-                "ReadingVolts": v["reading"],
+                "ReadingVolts": v.get("reading"),
                 "LowerThresholdCritical": v.get("lower_critical"),
                 "UpperThresholdCritical": v.get("upper_critical"),
-                "Status": _status(v.get("health", "OK")),
+                "Status": _status(v.get("health", "OK"), v.get("state")),
             }
             for i, v in enumerate(sc["voltages"])
         ],
@@ -143,10 +143,10 @@ def thermal(sc: dict[str, Any]) -> dict[str, Any]:
                 "MemberId": str(i),
                 "Name": t["name"],
                 "PhysicalContext": t.get("context"),
-                "ReadingCelsius": t["reading"],
+                "ReadingCelsius": t.get("reading"),
                 "UpperThresholdNonCritical": t.get("upper_noncritical"),
                 "UpperThresholdCritical": t.get("upper_critical"),
-                "Status": _status(t.get("health", "OK")),
+                "Status": _status(t.get("health", "OK"), t.get("state")),
             }
             for i, t in enumerate(sc["temperatures"])
         ],
@@ -155,10 +155,10 @@ def thermal(sc: dict[str, Any]) -> dict[str, Any]:
                 "@odata.id": f"{base}#/Fans/{i}",
                 "MemberId": str(i),
                 "Name": f["name"],
-                "Reading": f["reading"],
-                "ReadingUnits": "RPM",
+                "Reading": f.get("reading"),
+                "ReadingUnits": f.get("units", "RPM"),
                 "LowerThresholdCritical": f.get("lower_critical"),
-                "Status": _status(f.get("health", "OK")),
+                "Status": _status(f.get("health", "OK"), f.get("state")),
             }
             for i, f in enumerate(sc["fans"])
         ],

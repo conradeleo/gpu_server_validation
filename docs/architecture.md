@@ -12,9 +12,38 @@ RedfishClient.get(uri)            -- the only HTTP entry point (GET only)
   ├─ get_power() / get_thermal()  chassis.Power / chassis.Thermal links
   └─ get_event_logs()             system.LogServices -> EventLog (or first) -> Entries
 bmc/power_collector.py            PowerState interpretation           ✅
-bmc/sensor_collector.py           thresholds from config/thresholds.yaml  ⏳ Phase 2
-bmc/event_log_collector.py        severity summary                    ⏳ Phase 2
+bmc/sensor_collector.py           temp/fan/voltage classification     ✅ Phase 2
+bmc/event_log_collector.py        LogEntry parsing + severity summary ✅ Phase 2
+common/status.py                  HealthStatus model + worst-of       ✅ Phase 2
 ```
+
+### Sensor classification (Phase 2)
+
+Each sensor gets two independent opinions, both recorded in `SensorReading`:
+
+| Source | Temperature | Fan | Voltage |
+|---|---|---|---|
+| Framework | `thresholds.yaml` by `PhysicalContext` (CPU/GPU/Intake/default): `>= warning` WARNING, `>= critical` CRITICAL | `thresholds.yaml` RPM: `< warning_below` WARNING, `< critical_below` CRITICAL; non-RPM units not checked | BMC-published `Lower/UpperThresholdCritical`: outside → CRITICAL |
+| BMC | `Status.Health` OK/Warning/Critical | same | same |
+
+Rules:
+1. Final sensor status = worse of the two opinions. Disagreements get a `disagreement:` note,
+   so a BMC reporting `OK` for an over-threshold reading is never silently trusted.
+2. No reading → UNKNOWN, unless the BMC itself reports Warning/Critical (escalation only).
+   A bare BMC `OK` without a value is not accepted as evidence of health.
+3. `Status.State` Absent/Disabled → recorded, excluded from aggregation.
+4. Report status = worst known status of present sensors; present-but-UNKNOWN sensors are listed
+   in `unknown_sensors` rather than hidden. Missing `Thermal`/`Power` resources (404, no link)
+   are listed in `missing_resources`; connection/auth errors propagate.
+5. Threshold files are validated on load (numeric, warning < critical, defaults present).
+
+### Event log (Phase 2)
+
+`LogEntry` → `LogEvent` (UTC timestamp, severity as HealthStatus). Naive timestamps are assumed
+UTC; invalid timestamps and non-standard severities become `None`/UNKNOWN and are listed as
+anomalies (they do not escalate status). Summary status = worst severity among *considered*
+events; an optional `since` window (e.g. start of a validation run) keeps resolved historical
+events from holding a server CRITICAL indefinitely, while all events are still returned.
 
 Design decisions:
 
@@ -50,7 +79,7 @@ raised), GPU via a backend interface (`NvidiaSmiBackend` first, `RocmSmiBackend`
 
 ## 3. Validation engine (⏳ Phase 4)
 
-Status model: `HEALTHY < WARNING < DEGRADED < CRITICAL`, plus `UNKNOWN`.
+Status model (`common/status.py`, already used by Phase 2 collectors): `HEALTHY < WARNING < DEGRADED < CRITICAL`, plus `UNKNOWN`.
 Planned aggregation policy (BMC state and host state are always recorded next to the system state):
 
 | BMC | Host | System | Rationale |
