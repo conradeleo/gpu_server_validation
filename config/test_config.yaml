@@ -1,0 +1,11 @@
+# Framework configuration. Credentials are NOT stored here; see .env.example.
+redfish:
+  base_url: http://127.0.0.1:8000
+  timeout_seconds: 5
+  verify_tls: true
+
+mock:
+  host: 127.0.0.1
+  port: 8000
+  scenario_file: config/mock_scenarios.yaml
+  default_scenario: normal

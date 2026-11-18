@@ -1,0 +1,10 @@
+# Framework-side classification thresholds (independent of the BMC's own thresholds).
+# Used from Phase 2 (sensor classification, TC04/TC05). Values are illustrative defaults.
+temperature_celsius:
+  CPU:      {warning: 85, critical: 95}
+  GPU:      {warning: 83, critical: 90}
+  Intake:   {warning: 35, critical: 42}
+  default:  {warning: 80, critical: 90}
+
+fan_rpm:
+  default:  {warning_below: 2000, critical_below: 1000}

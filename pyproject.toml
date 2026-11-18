@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gpu-server-validation"
+version = "0.1.0"
+description = "Hardware-aware GPU server validation framework (Redfish/BMC + Linux host + pytest)."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.115,<0.116",
+    "uvicorn>=0.32,<0.33",
+    "requests>=2.32,<3",
+    "PyYAML>=6.0,<7",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8.3,<9", "pytest-html>=4.1,<5"]
+
+[tool.setuptools.packages.find]
+include = ["bmc*", "host*", "validation*", "events*", "simulator*", "mocks*", "common*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-ra -p tests.evidence_plugin --html=reports/report.html --self-contained-html --junitxml=reports/junit.xml"
+markers = [
+    "tc(id, objective, preconditions, steps, expected): test-case metadata recorded in the evidence report",
+    "scenario(name): mock Redfish scenario activated before the test (default: normal)",
+]
+log_level = "INFO"

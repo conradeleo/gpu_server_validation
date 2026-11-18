@@ -1,0 +1,67 @@
+# Mock Redfish scenarios. ALL DATA IS SIMULATED.
+# Each scenario is shallow-merged over `defaults` (top-level keys replace the default value).
+# Switch scenarios without touching Python: --scenario CLI option, MOCK_SCENARIO env var,
+# or PUT /mock/scenario at runtime.
+
+defaults:
+  resource_ids: {system: system, chassis: chassis}
+  system:
+    power_state: "On"
+    health: OK
+    model: "SIM-GPU-Server-8X (simulated)"
+    serial_number: "SIM-0001"
+    bios_version: "SIM-BIOS-1.0.0"
+  temperatures:
+    - {name: CPU0 Temp,  context: CPU,    reading: 52, upper_noncritical: 85, upper_critical: 95, health: OK}
+    - {name: CPU1 Temp,  context: CPU,    reading: 54, upper_noncritical: 85, upper_critical: 95, health: OK}
+    - {name: GPU0 Temp,  context: GPU,    reading: 61, upper_noncritical: 83, upper_critical: 90, health: OK}
+    - {name: Inlet Temp, context: Intake, reading: 24, upper_noncritical: 35, upper_critical: 42, health: OK}
+  fans:
+    - {name: Fan1, reading: 7200, lower_critical: 1000, health: OK}
+    - {name: Fan2, reading: 7150, lower_critical: 1000, health: OK}
+    - {name: Fan3, reading: 7300, lower_critical: 1000, health: OK}
+  voltages:
+    - {name: P12V,  reading: 12.05, lower_critical: 11.4, upper_critical: 12.6, health: OK}
+    - {name: P3V3,  reading: 3.31,  lower_critical: 3.13, upper_critical: 3.47, health: OK}
+  power_consumed_watts: 1840
+  events:
+    - {id: "1", created: "2026-11-18T07:55:00Z", severity: OK, message_id: "OpenBMC.0.1.BMCBootReason",
+       message: "BMC booted (simulated)."}
+    - {id: "2", created: "2026-11-18T08:00:00Z", severity: OK, message_id: "OpenBMC.0.1.SystemPowerOn",
+       message: "System power on (simulated)."}
+  # Host-side state, consumed by mocks/mock_host_status.py in Phase 3 (not served over Redfish).
+  host: {reachable: true, gpu_driver: ok, gpu_runtime: available}
+
+scenarios:
+  normal:
+    description: "Scenario A - normal server: power On, all sensors OK, no critical events, host healthy."
+
+  sensor_warning:
+    description: "Scenario B - BMC sensor warning: CPU0 above the configured warning threshold, host healthy."
+    system: {power_state: "On", health: Warning, model: "SIM-GPU-Server-8X (simulated)",
+             serial_number: "SIM-0001", bios_version: "SIM-BIOS-1.0.0"}
+    temperatures:
+      - {name: CPU0 Temp,  context: CPU,    reading: 88, upper_noncritical: 85, upper_critical: 95, health: Warning}
+      - {name: CPU1 Temp,  context: CPU,    reading: 55, upper_noncritical: 85, upper_critical: 95, health: OK}
+      - {name: GPU0 Temp,  context: GPU,    reading: 63, upper_noncritical: 83, upper_critical: 90, health: OK}
+      - {name: Inlet Temp, context: Intake, reading: 26, upper_noncritical: 35, upper_critical: 42, health: OK}
+    events:
+      - {id: "1", created: "2026-11-18T08:00:00Z", severity: OK, message_id: "OpenBMC.0.1.SystemPowerOn",
+         message: "System power on (simulated)."}
+      - {id: "2", created: "2026-11-18T09:12:30Z", severity: Warning, message_id: "OpenBMC.0.1.SensorThresholdWarningHighGoingHigh",
+         message: "CPU0 Temp reading 88 C crossed upper non-critical threshold 85 C (simulated)."}
+
+  host_gpu_failure:
+    description: "Scenario C - BMC healthy but host GPU driver error (detectable only from the host side)."
+    host: {reachable: true, gpu_driver: error, gpu_runtime: unavailable}
+
+  powered_off:
+    description: "Scenario D - chassis powered off; BMC reachable, host unreachable."
+    system: {power_state: "Off", health: OK, model: "SIM-GPU-Server-8X (simulated)",
+             serial_number: "SIM-0001", bios_version: "SIM-BIOS-1.0.0"}
+    power_consumed_watts: 0
+    host: {reachable: false, gpu_driver: unknown, gpu_runtime: unknown}
+
+  vendor_ids:
+    description: "Normal data but vendor-style resource IDs (Systems/Self, Chassis/1) to exercise link discovery."
+    resource_ids: {system: Self, chassis: "1"}
