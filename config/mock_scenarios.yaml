@@ -62,6 +62,46 @@ scenarios:
     power_consumed_watts: 0
     host: {reachable: false, gpu_driver: unknown, gpu_runtime: unknown}
 
+  bmc_critical_host_failure:
+    description: "Scenario E - BMC critical (GPU0 over critical temp, fan failing, critical SEL event) and host GPU failure."
+    system: {power_state: "On", health: Critical, model: "SIM-GPU-Server-8X (simulated)",
+             serial_number: "SIM-0001", bios_version: "SIM-BIOS-1.0.0"}
+    temperatures:
+      - {name: CPU0 Temp,  context: CPU,    reading: 71, upper_noncritical: 85, upper_critical: 95, health: OK}
+      - {name: CPU1 Temp,  context: CPU,    reading: 72, upper_noncritical: 85, upper_critical: 95, health: OK}
+      - {name: GPU0 Temp,  context: GPU,    reading: 93, upper_noncritical: 83, upper_critical: 90, health: Critical}
+      - {name: Inlet Temp, context: Intake, reading: 31, upper_noncritical: 35, upper_critical: 42, health: OK}
+    fans:
+      - {name: Fan1, reading: 7200, lower_critical: 1000, health: OK}
+      - {name: Fan2, reading: 800,  lower_critical: 1000, health: Critical}
+      - {name: Fan3, reading: 7300, lower_critical: 1000, health: OK}
+    events:
+      - {id: "1", created: "2026-11-18T08:00:00Z", severity: OK, message_id: "OpenBMC.0.1.SystemPowerOn",
+         message: "System power on (simulated)."}
+      - {id: "2", created: "2026-11-18T10:02:10Z", severity: Warning, message_id: "OpenBMC.0.1.FanSpeedLow",
+         message: "Fan2 speed 1500 RPM below normal (simulated)."}
+      - {id: "3", created: "2026-11-18T10:05:42Z", severity: Critical, message_id: "OpenBMC.0.1.SensorThresholdCriticalHighGoingHigh",
+         message: "GPU0 Temp reading 93 C crossed upper critical threshold 90 C (simulated)."}
+    host: {reachable: true, gpu_driver: error, gpu_runtime: unavailable}
+
+  sparse_sensors:
+    description: "Robustness - incomplete/irregular BMC data: missing readings, absent fan, percent fan, bad event fields."
+    temperatures:
+      - {name: CPU0 Temp,  context: CPU,    reading: 50, health: OK}
+      - {name: CPU1 Temp,  context: CPU,    reading: null, health: null}
+      - {name: GPU0 Temp,  context: null,   reading: 60, health: OK}
+    fans:
+      - {name: Fan1, reading: 7200, health: OK}
+      - {name: Fan2, reading: null, state: Absent, health: null}
+      - {name: Fan3, reading: 45, units: Percent, health: OK}
+    voltages:
+      - {name: P12V, reading: 12.0, health: OK}
+    events:
+      - {id: "1", created: "not-a-timestamp", severity: OK, message_id: "OpenBMC.0.1.SystemPowerOn",
+         message: "System power on (simulated)."}
+      - {id: "2", created: "2026-11-18T09:00:00", severity: Informational, message_id: "Vendor.1.0.Note",
+         message: "Non-standard severity value (simulated)."}
+
   vendor_ids:
     description: "Normal data but vendor-style resource IDs (Systems/Self, Chassis/1) to exercise link discovery."
     resource_ids: {system: Self, chassis: "1"}
